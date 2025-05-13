@@ -60,13 +60,13 @@ export const HistoryList = styled.div`
 `;
 
 const STATUS_COLORS = {
-  yellow:'yellow-500' ,
-  green: 'green-500' ,
-  red: 'red-500' ,
-}as const
+  yellow:defaultTheme["yellow-500"] ,
+  green: defaultTheme["green-500"] ,
+  red: defaultTheme["red-700"] ,
+}as const //serve para deixar os valores imtavel, sem ele o typeScript ia deixar tudo em string, com ele ele fala que tem yellow, green e red
 
 interface StatusProps {
-  statusColor:'yellow' | 'red' |'green'
+  statusColor:keyof typeof STATUS_COLORS //basicamente falei as cores que tenho disponiveis são as keys(yellow, green e red) do tipo do meu objeto. Como o STATUS_COLOR é um objeto não consigo passar ele direto sem um typeoff
 }
 
 export const Status = styled.span<StatusProps>`
@@ -79,6 +79,6 @@ export const Status = styled.span<StatusProps>`
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: ${STATUS_COLORS[]};
+    background: ${(props) =>STATUS_COLORS[props.statusColor]};
   }
 `
