@@ -1,4 +1,4 @@
-import { Play } from "phosphor-react";
+import { HandPalm, Play } from "phosphor-react";
 //biblioteca de formularios do react de forma controlled e uncontrolled 
 import {useForm} from 'react-hook-form';
 
@@ -6,6 +6,7 @@ import {useForm} from 'react-hook-form';
 
 import {zodResolver} from '@hookform/resolvers/zod';
 
+import {differenceInSeconds} from 'date-fns'
 
 import * as zod from 'zod'
 
@@ -16,9 +17,10 @@ import {
   MinutesAmountIput,
   Separator, 
   StartCountDownmButton, 
+  StopCountDownmButton, 
   TaskInput 
 } from "./styled";
-import { useState } from "react";
+import { useEffect, useState } from "react";
   //esse objeto dentro do use form serve para passar as regras do formulario, o numero de caracteres minimos, espaço vazio,etc
 const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, 'informe a tarefa'),
@@ -41,6 +43,8 @@ interface Cycle {
   id: string;
   task: string;
   minutesAmount:number;
+  startDate: Date;
+  interruptedDate?: Date;
 }
 
 //controlled / uncontrolled
@@ -60,21 +64,49 @@ export function Home() {
       MinutesAmount: 0,
     }
   })
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
+  useEffect(()=> {
+    let interval:number;
+    if(activeCycle){
+     const interval = setInterval(()=>{
+        setAmountSecondsPassed(differenceInSeconds(new Date(),activeCycle.startDate))
+      },1000)
+    }
+    return () => {
+      clearInterval(interval)
+    }
+  },[activeCycle])
+
+      function handleInterriptCycle() {
+      setActiveCycleId(null)
+      setCycles(cycles.map((cycle)=> {
+        if(cycle.id === activeCycleId){
+          return { ...cycle, interruptedDate: new Date()}
+        }else{
+          return cycle
+        }
+      }),
+    )
+    setActiveCycleId(null)
+    }
+
   function handleCreateNewCycle(data:NewCycleFormData){
     const id = String(new Date().getTime())
     const newCycle: Cycle = {
       id, 
       task: data.task,
       minutesAmount:data.MinutesAmount,
+      startDate: new Date(),
     }
     //sempre que uma alteração de estado depender do valor anterior , devemos usar funções
     setCycles((state) => [...cycles,newCycle])
     setActiveCycleId(id)
+    setAmountSecondsPassed(0)
     reset()//limpa os campos dos formularios automaticamente
 
   }
 
-  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
+
 
   const totalSeconds =activeCycle? activeCycle.minutesAmount *60 : 0
   const currentSeconds = activeCycle ? totalSeconds -amountSecondsPassed : 0
@@ -84,6 +116,12 @@ export function Home() {
 
   const minutes = String(minutesAmount).padStart(2,'0')
   const seconds = String(secondsAmount).padStart(2,'0')
+
+  useEffect(() => {
+    if(activeCycle){
+      document.title = `${minutes}:${seconds}`
+    }
+  },[minutes,seconds,activeCycle])
 
 // esse watch ele observa o task em tempo real
 
@@ -102,7 +140,7 @@ export function Home() {
         <FormContainer>
             <label htmlFor="task">Vou trabalhar em</label>
             <TaskInput 
-
+            disabled={!!activeCycle}
             placeholder="Dê um nome para seu projeto" 
             id="task"
             list="task-suggetions"
@@ -118,9 +156,10 @@ export function Home() {
             type="number" 
             id="minutesAmount"  
             placeholder="00"
+            disabled={!!activeCycle}
             step={5}
             min={5}
-            // max={60}
+            max={60}
             {...register('MinutesAmount',{valueAsNumber:true})}
             />
 
@@ -135,11 +174,21 @@ export function Home() {
             <span>{seconds[1]}</span>
         </CountDownmContainer>
         
-        <StartCountDownmButton  disabled={isSubmitDisabled} type="submit">  
+       {activeCycle? (
+         <StopCountDownmButton 
+          type="button">  
+        <HandPalm size={24}/>
+        Começar
+
+        </StopCountDownmButton>
+       ):(
+         <StartCountDownmButton  disabled={isSubmitDisabled} type="submit">  
         <Play size={24}/>
         Começar
 
         </StartCountDownmButton>
+       )
+      }
 
         </form>
     </HomeContainer>

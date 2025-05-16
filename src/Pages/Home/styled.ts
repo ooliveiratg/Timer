@@ -82,7 +82,7 @@ export const Separator = styled.div`
 
 `
 
-export const StartCountDownmButton = styled.button`
+export const BaseCountDownmButton = styled.button`
     width: 100%;
     border: 0;
     padding: 1rem;
@@ -104,4 +104,20 @@ export const StartCountDownmButton = styled.button`
         background-color: ${defaultTheme["green-700"]};
     }
 
+`
+
+export const StartCountDownmButton = styled(BaseCountDownmButton)`
+    background:${defaultTheme["green-500"]};
+    color: ${defaultTheme["gray-100"]};
+    &:not(:disabled):hover{
+        background-color: ${defaultTheme["green-700"]};
+    }
+    
+`
+
+export const StopCountDownmButton = styled(BaseCountDownmButton)`
+    background-color: ${defaultTheme["red-500"]};
+    &:not(:disabled):hover{
+        background-color: ${defaultTheme["red-700"]};
+    }
 `
