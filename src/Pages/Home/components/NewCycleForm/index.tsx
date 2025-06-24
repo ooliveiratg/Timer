@@ -1,41 +1,13 @@
 import { FormContainer, TaskInput, MinutesAmountIput } from "./styled"
-import * as zod from 'zod'
-//biblioteca de formularios do react de forma controlled e uncontrolled 
-import {useForm} from 'react-hook-form';
+import { useContext } from "react";
+import { CyclesContext } from "../..";
+import { useFormContext } from "react-hook-form";
 
+export function NewCycleForm () {
 
-//bibliotecas para a validação de formulario
+  const {activeCycle} = useContext(CyclesContext)
+  const {register} = useFormContext()
 
-import {zodResolver} from '@hookform/resolvers/zod';
-
-export const NewCycleForm () {
-
-    const newCycleFormValidationSchema = zod.object({
-      task: zod.string().min(1, 'informe a tarefa'),
-      MinutesAmount: zod
-      .number()
-      .min(1)
-      .max(60),
-    
-    })
-    
-    // interface NewCycleFormData {
-    //   task: string
-    //   minutesAmount: number
-    
-    // }
-    //isso é a mesma coisa que a interface acima, mas com o zod
-    type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
-
-    //no useForm nos passamos um objeto de configurações e falamos que queros usar um resolver de validação e quem fara isso é o zodResolver
-      const{ register , handleSubmit , watch , reset } = useForm<NewCycleFormData>({
-        resolver:zodResolver(newCycleFormValidationSchema),
-        //aqui eu passo o valor inicial de cada campo
-        defaultValues: {
-          task: '',
-          MinutesAmount: 0,
-        }
-      })
     return(
         <FormContainer>
             <label htmlFor="task">Vou trabalhar em</label>

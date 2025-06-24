@@ -1,115 +1,140 @@
 import { HandPalm, Play } from "phosphor-react";
 
-
-
-
-
 import {
-  HomeContainer, 
-  StartCountDownmButton, 
-  StopCountDownmButton
+  HomeContainer,
+  StartCountDownmButton,
+  StopCountDownmButton,
 } from "./styled";
-import { useEffect, useState } from "react";
+import { createContext, useState } from "react";
 import { NewCycleForm } from "./components/NewCycleForm";
 import { CountDown } from "./components/CountDown";
-  //esse objeto dentro do use form serve para passar as regras do formulario, o numero de caracteres minimos, espaço vazio,etc
 
+import * as zod from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
 
 interface Cycle {
   id: string;
   task: string;
-  minutesAmount:number;
+  minutesAmount: number;
   startDate: Date;
   interruptedDate?: Date;
-  finished?:Date;
+  finished?: Date;
 }
 
-//controlled / uncontrolled
+interface CyclesContextType {
+  activeCycle: Cycle | undefined;
+  activeCycleId: string | null;
+  markCurrentCycleAsFinished: () => void;
+  amountSecondsPassed: number;
+  setSeccondsPassed: (seconds: number) => void;
+}
+
+export const CyclesContext = createContext({} as CyclesContextType);
+
 export function Home() {
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
+  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
 
-  const [cycles,setCycles] =useState<Cycle[]>([])
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+  const newCycleFormValidationSchema = zod.object({
+    task: zod.string().min(1, "informe a tarefa"),
+    MinutesAmount: zod.number().min(1).max(60),
+  });
 
-  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
-
-      function handleInterriptCycle() {
-      setCycles(state => state.map((cycle)=> {
-        if(cycle.id === activeCycleId){
-          return { ...cycle, interruptedDate: new Date()}
-        }else{
-          return cycle
-        }
-      }),
-    )
-    setActiveCycleId(null)
-    }
-
-  function handleCreateNewCycle(data:NewCycleFormData){
-    const id = String(new Date().getTime())
-    const newCycle: Cycle = {
-      id, 
-      task: data.task,
-      minutesAmount:data.MinutesAmount,
-      startDate: new Date(),
-    }
-    //sempre que uma alteração de estado depender do valor anterior , devemos usar funções
-    setCycles((state) => [...cycles,newCycle])
-    setActiveCycleId(id)
-    setAmountSecondsPassed(0)
-    reset()//limpa os campos dos formularios automaticamente
-
+  function setSeccondsPassed(seconds: number) {
+    setAmountSecondsPassed(seconds);
   }
 
+  const newCycleForm = useForm<NewCycleFormData>({
+    resolver: zodResolver(newCycleFormValidationSchema),
+    //aqui eu passo o valor inicial de cada campo
+    defaultValues: {
+      task: "",
+      MinutesAmount: 0,
+    },
+  });
 
+  const { handleSubmit, watch, reset } = newCycleForm;
 
-  
-  const currentSeconds = activeCycle ? totalSeconds -amountSecondsPassed : 0
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
 
-  const minutesAmount = Math.floor(currentSeconds / 60)
-  const secondsAmount = currentSeconds % 60
+  function markCurrentCycleAsFinished() {
+    setCycles((state) =>
+      state.map((cycle) => {
+        if (cycle.id === activeCycleId) {
+          return { ...cycle, finished: new Date() };
+        } else {
+          return cycle;
+        }
+      })
+    );
+  }
 
-  const minutes = String(minutesAmount).padStart(2,'0')
-  const seconds = String(secondsAmount).padStart(2,'0')
+  function handleInterriptCycle() {
+    setCycles((state) =>
+      state.map((cycle) => {
+        if (cycle.id === activeCycleId) {
+          return { ...cycle, interruptedDate: new Date() };
+        } else {
+          return cycle;
+        }
+      })
+    );
+    setActiveCycleId(null);
+  }
 
-  useEffect(() => {
-    if(activeCycle){
-      document.title = `${minutes}:${seconds}`
-    }
-  },[minutes,seconds,activeCycle])
+  type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>;
 
-// esse watch ele observa o task em tempo real
+  function handleCreateNewCycle(data: NewCycleFormData) {
+    const id = String(new Date().getTime());
+    const newCycle: Cycle = {
+      id,
+      task: data.task,
+      minutesAmount: data.MinutesAmount,
+      startDate: new Date(),
+    };
 
-  //controlle: pega cada caracter digitado e e executa o codigo toda vez que um novo caracter for digitado
+    setCycles(() => [...cycles, newCycle]);
+    setActiveCycleId(id);
+    setAmountSecondsPassed(0);
+    reset();
+  }
 
-  //uncontrolled é o oposto disso, Você acessa o valor só quando precisa
-  const task= watch('task')
-  const isSubmitDisabled = !task
+  const task = watch("task");
+  const isSubmitDisabled = !task;
 
-  //function register recebe o nome do input e alguns metodos
-  
-  console.log(cycles)
+  console.log(cycles);
   return (
     <HomeContainer>
-      <form onSubmit={handleSubmit(handleCreateNewCycle)} action={''}>
-        <NewCycleForm/>
-        <CountDown/>
+      <form onSubmit={handleSubmit(handleCreateNewCycle)} action={""}>
+        <CyclesContext.Provider
+          value={{
+            activeCycle,
+            activeCycleId,
+            markCurrentCycleAsFinished,
+            amountSecondsPassed,
+            setSeccondsPassed,
+          }}
+        >
+          <FormProvider {...newCycleForm}>
+            <NewCycleForm />
+          </FormProvider>
+          <CountDown />
+        </CyclesContext.Provider>
 
-        
-       {activeCycle? (
-         <StopCountDownmButton onClick={handleInterriptCycle}
-          type="button">  
-        <HandPalm size={24}/>
-        Interromper
-        </StopCountDownmButton>
-       ):(
-         <StartCountDownmButton  disabled={isSubmitDisabled} type="submit">  
-        <Play size={24}/>
-        Começar
-        </StartCountDownmButton>
-       )
-      }
-
-        </form>
+        {activeCycle ? (
+          <StopCountDownmButton onClick={handleInterriptCycle} type="button">
+            <HandPalm size={24} />
+            Interromper
+          </StopCountDownmButton>
+        ) : (
+          <StartCountDownmButton disabled={isSubmitDisabled} type="submit">
+            <Play size={24} />
+            Começar
+          </StartCountDownmButton>
+        )}
+      </form>
     </HomeContainer>
   );
 }
