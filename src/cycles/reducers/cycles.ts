@@ -15,7 +15,7 @@ interface CycleState {
 }
 
 
-export function cyclesReducer(state: CycleState, action){
+export function cyclesReducer(state: CycleState, action:any){
     switch (action.type) {
           case actionTypes.ADD_NEW_CYCLE:
             return {
